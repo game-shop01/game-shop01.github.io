@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏道具商城</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui}
+        body{background:#1a1a2e;color:#fff;padding:20px;max-width:1000px;margin:0 auto}
+        h1{text-align:center;margin-bottom:30px;color:#00d9ff}
+        .goods-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px}
+        .goods-item{background:#16213e;padding:12px;border-radius:12px;border:1px solid #0f3460}
+        /*商品图片样式*/
+        .goods-img{
+            width:100%;
+            height:140px;
+            object-fit:cover;
+            border-radius:8px;
+            margin-bottom:10px;
+        }
+        .goods-item h3{margin-bottom:8px;font-size:15px}
+        .price{color:#ffd000;font-size:18px;margin-bottom:12px}
+        .buy-btn{width:100%;padding:10px;background:#00d9ff;color:#000;border:none;border-radius:8px;font-weight:bold;cursor:pointer;font-size:16px}
+        .mask{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:99}
+        .modal{background:#16213e;padding:24px;border-radius:12px;text-align:center;width:90%;max-width:400px}
+        .modal img{max-width:260px;margin:12px 0;border-radius:8px}
+        .modal p{margin:8px 0}
+        .modal input{width:100%;padding:10px;margin:8px 0;border-radius:6px;border:none;outline:none}
+        .modal button{padding:10px 16px;margin:8px;border:none;border-radius:6px;cursor:pointer}
+        .confirm{background:#00d9ff;color:#000;font-weight:bold}
+        .close{background:#666;color:#fff}
+    </style>
+</head>
+<body>
+    <h1>游戏道具商店</h1>
+    <div class="goods-list" id="goodsBox"></div>
+
+    <!-- 弹窗：收款码 -->
+    <div class="mask" id="payMask">
+        <div class="modal">
+            <h3>请扫码付款</h3>
+            <img src="qrcode.jpg" alt="收款码">
+            <p id="payTip"></p>
+            <button class="confirm" onclick="showForm()">✅ 已付款，填写信息</button>
+            <button class="close" onclick="closeMask()">关闭</button>
+        </div>
+    </div>
+
+    <!-- 弹窗：填写游戏信息 -->
+    <div class="mask" id="infoMask">
+        <div class="modal">
+            <h3>填写收货信息</h3>
+            <input type="text" id="gameName" placeholder="游戏名称">
+            <input type="text" id="gameId" placeholder="游戏ID">
+            <button class="confirm" onclick="submitInfo()">提交</button>
+            <button class="close" onclick="closeMask()">关闭</button>
+        </div>
+    </div>
+
+<script>
+    // 商品数据，新增img字段填写图片文件名
+    const goods = [
+        {name:"苏尔南钻石100克",price:"5元",img:"def.jpg"},
+        {name:"随机词条轩辕七级甲",price:"20元",img:"def.jpg"},
+        {name:"随机词条随机阵营七级头",price:"20元",img:"def.jpg"},
+        {name:"随机词条随机阵营七级背包",price:"10元",img:"def.jpg"},
+        {name:"速尔南暗潮1钻",price:"150元",img:"anchao.jpg"},
+        {name:"速尔南暗潮2钻",price:"200元",img:"anchao.jpg"},
+        {name:"速尔南暗潮3钻",price:"300元",img:"anchao.jpg"},
+        {name:"速尔南暗潮4钻",price:"450元",img:"anchao.jpg"},
+        {name:"速尔南暗潮5钻",price:"500元",img:"anchao.jpg"},
+        {name:"速尔南暗潮6钻",price:"550元",img:"anchao.jpg"},
+        {name:"速尔南暗潮7钻",price:"1150元",img:"anchao.jpg"},
+        {name:"速尔南怒嚎1钻",price:"120元",img:"nuhao.jpg"},
+        {name:"速尔南怒嚎2钻",price:"160元",img:"nuhao.jpg"},
+        {name:"速尔南怒嚎3钻",price:"200元",img:"nuhao.jpg"},
+        {name:"速尔南怒嚎4钻",price:"260元",img:"nuhao.jpg"},
+        {name:"速尔南怒嚎5钻",price:"300元",img:"nuhao.jpg"},
+        {name:"速尔南怒嚎6钻",price:"400元",img:"nuhao.jpg"},
+        {name:"速尔南怒嚎7钻",price:"800元",img:"nuhao.jpg"},
+        {name:"速尔南血宴1钻",price:"140元",img:"xueyan.jpg"},
+        {name:"速尔南血宴2钻",price:"180元",img:"xueyan.jpg"},
+        {name:"速尔南血宴3钻",price:"220元",img:"xueyan.jpg"},
+        {name:"速尔南血宴4钻",price:"300元",img:"xueyan.jpg"},
+        {name:"速尔南血宴5钻",price:"340元",img:"xueyan.jpg"},
+        {name:"速尔南血宴6钻",price:"450元",img:"xueyan.jpg"},
+        {name:"速尔南血宴7钻",price:"1200元",img:"xueyan.jpg"}
+    ]
+
+    // 渲染商品，插入图片标签
+    const goodsBox = document.getElementById('goodsBox')
+    goods.forEach((item,idx)=>{
+        const div = document.createElement('div')
+        div.className = 'goods-item'
+        div.innerHTML = `
+            <img class="goods-img" src="${item.img}" alt="${item.name}">
+            <h3>${item.name}</h3>
+            <div class="price">${item.price}</div>
+            <button class="buy-btn" onclick="openPay(${idx})">立即购买</button>
+        `
+        goodsBox.appendChild(div)
+    })
+
+    let currentGoods = null
+    const payMask = document.getElementById('payMask')
+    const infoMask = document.getElementById('infoMask')
+
+    function openPay(idx){
+        currentGoods = goods[idx]
+        document.getElementById('payTip').innerText = `商品：${currentGoods.name}｜价格：${currentGoods.price}`
+        payMask.style.display = 'flex'
+    }
+    function showForm(){
+        payMask.style.display = 'none'
+        infoMask.style.display = 'flex'
+    }
+    function closeMask(){
+        payMask.style.display = 'none'
+        infoMask.style.display = 'none'
+    }
+    function submitInfo(){
+        const gname = document.getElementById('gameName').value.trim()
+        const gid = document.getElementById('gameId').value.trim()
+        if(!gname || !gid){
+            alert("游戏名称和ID不能为空！")
+            return
+        }
+        alert(`提交成功！\n商品：${currentGoods.name}\n游戏：${gname}\nID：${gid}\n【注意：你收不到这条信息！】`)
+        closeMask()
+    }
+</script>
+</body>
+</html>
