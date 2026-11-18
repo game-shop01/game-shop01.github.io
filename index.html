@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏道具商城</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,-apple-system}
+        body{
+            background:#121424;
+            color:#fff;
+            padding:24px 16px;
+            max-width:1100px;
+            margin:0 auto;
+            min-height:100vh;
+        }
+        .page-header{
+            text-align:center;
+            margin-bottom:40px;
+        }
+        .page-header h1{
+            color:#00d9ff;
+            font-size:28px;
+            margin-bottom:8px;
+            text-shadow:0 0 12px rgba(0,217,255,0.35);
+        }
+        .page-header p{
+            color:#94a3b8;
+            font-size:14px;
+        }
+        .goods-list{
+            display:grid;
+            grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+            gap:22px;
+        }
+        .goods-item{
+            background:#1a1d36;
+            padding:14px;
+            border-radius:14px;
+            border:1px solid #272c52;
+            transition:0.28s ease;
+        }
+        .goods-item:hover{
+            transform:translateY(-6px);
+            box-shadow:0 8px 24px rgba(0,217,255,0.18);
+            border-color:#00d9ff;
+        }
+        .goods-img{
+            width:100%;
+            height:145px;
+            object-fit:cover;
+            border-radius:10px;
+            margin-bottom:12px;
+            transition:0.25s ease;
+        }
+        .goods-item:hover .goods-img{
+            transform:scale(1.03);
+        }
+        .goods-item h3{
+            font-size:15px;
+            line-height:1.4;
+            margin-bottom:10px;
+            color:#e2e8f0;
+        }
+        .price{
+            display:inline-block;
+            background:rgba(255,208,0,0.12);
+            color:#ffd000;
+            padding:4px 10px;
+            border-radius:6px;
+            font-size:17px;
+            font-weight:bold;
+            margin-bottom:14px;
+        }
+        .buy-btn{
+            width:100%;
+            padding:11px;
+            background:#00d9ff;
+            color:#081424;
+            border:none;
+            border-radius:9px;
+            font-weight:bold;
+            cursor:pointer;
+            font-size:16px;
+            transition:0.22s ease;
+        }
+        .buy-btn:hover{
+            background:#22e5ff;
+            transform:translateY(-2px);
+            box-shadow:0 4px 14px rgba(0,217,255,0.35);
+        }
+        .buy-btn:active{
+            transform:translateY(1px);
+        }
+
+        /*弹窗动画样式*/
+        .mask{
+            position:fixed;
+            inset:0;
+            background:rgba(0,0,0,0.78);
+            z-index:999;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            opacity:0;
+            visibility:hidden;
+            transition:opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .mask.show{
+            opacity:1;
+            visibility:visible;
+        }
+        .modal{
+            background:#1a1d36;
+            padding:28px 24px;
+            border-radius:16px;
+            text-align:center;
+            width:90%;
+            max-width:420px;
+            border:1px solid #272c52;
+            transform:translateY(30px);
+            transition:transform 0.3s ease;
+        }
+        .mask.show .modal{
+            transform:translateY(0);
+        }
+        .modal h3{
+            color:#00d9ff;
+            margin-bottom:12px;
+            font-size:20px;
+        }
+        .modal img{
+            max-width:270px;
+            margin:14px auto;
+            border-radius:10px;
+        }
+        .modal p{
+            margin:8px 0 16px;
+            color:#cbd5e1;
+        }
+        .modal input{
+            width:100%;
+            padding:12px 14px;
+            margin:9px 0;
+            border-radius:9px;
+            border:1px solid #333963;
+            outline:none;
+            background:#23284b;
+            color:#fff;
+            font-size:15px;
+            transition:0.2s ease;
+        }
+        .modal input:focus{
+            border-color:#00d9ff;
+            box-shadow:0 0 0 3px rgba(0,217,255,0.15);
+        }
+        .modal button{
+            padding:11px 18px;
+            margin:8px 6px;
+            border:none;
+            border-radius:9px;
+            cursor:pointer;
+            font-size:15px;
+            transition:0.2s ease;
+        }
+        .confirm{
+            background:#00d9ff;
+            color:#081424;
+            font-weight:bold;
+        }
+        .confirm:hover{
+            background:#22e5ff;
+        }
+        .close{
+            background:#3b416b;
+            color:#e2e8f0;
+        }
+        .close:hover{
+            background:#4c5382;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <h1>游戏道具商店</h1>
+        <p>选择道具后点击购买，扫码付款填写游戏信息</p>
+    </div>
+
+    <div class="goods-list" id="goodsBox"></div>
+
+    <!-- 弹窗：收款码 -->
+    <div class="mask" id="payMask">
+        <div class="modal">
+            <h3>请扫码付款</h3>
+            <img src="qrcode.jpg" alt="收款码">
+            <p id="payTip"></p>
+            <button class="confirm" onclick="showForm()">✅ 已付款，填写信息</button>
+            <button class="close" onclick="closeMask()">关闭</button>
+        </div>
+    </div>
+
+    <!-- 弹窗：填写游戏信息 -->
+    <div class="mask" id="infoMask">
+        <div class="modal">
+            <h3>填写收货信息</h3>
+            <input type="text" id="gameName" placeholder="游戏名称">
+            <input type="text" id="gameId" placeholder="游戏ID">
+            <button class="confirm" onclick="submitInfo()">提交</button>
+            <button class="close" onclick="closeMask()">关闭</button>
+        </div>
+    </div>
+
+<script>
+    // 商品数据
+    const goods = [
+        {name:"苏尔南钻石100克",price:"5元",img:"def.jpg"},
+        {name:"随机词条轩辕七级甲",price:"20元",img:"def.jpg"},
+        {name:"随机词条随机阵营七级头",price:"20元",img:"def.jpg"},
+        {name:"随机词条随机阵营七级背包",price:"10元",img:"def.jpg"},
+        {name:"速尔南暗潮1钻",price:"150元",img:"anchao.jpg"},
+        {name:"速尔南暗潮2钻",price:"200元",img:"anchao.jpg"},
+        {name:"速尔南暗潮3钻",price:"300元",img:"anchao.jpg"},
+        {name:"速尔南暗潮4钻",price:"450元",img:"anchao.jpg"},
+        {name:"速尔南暗潮5钻",price:"500元",img:"anchao.jpg"},
+        {name:"速尔南暗潮6钻",price:"550元",img:"anchao.jpg"},
+        {name:"速尔南暗潮7钻",price:"1150元",img:"anchao.jpg"},
+        {name:"速尔南怒嚎1钻",price:"120元",img:"nuhao.jpg"},
+        {name:"速尔南怒嚎2钻",price:"160元",img:"nuhao.jpg"},
+        {name:"速尔南怒嚎3钻",price:"200元",img:"nuhao.jpg"},
+        {name:"速尔南怒嚎4钻",price:"260元",img:"nuhao.jpg"},
+        {name:"速尔南怒嚎5钻",price:"300元",img:"nuhao.jpg"},
+        {name:"速尔南怒嚎6钻",price:"400元",img:"nuhao.jpg"},
+        {name:"速尔南怒嚎7钻",price:"800元",img:"nuhao.jpg"},
+        {name:"速尔南血宴1钻",price:"140元",img:"xueyan.jpg"},
+        {name:"速尔南血宴2钻",price:"180元",img:"xueyan.jpg"},
+        {name:"速尔南血宴3钻",price:"220元",img:"xueyan.jpg"},
+        {name:"速尔南血宴4钻",price:"300元",img:"xueyan.jpg"},
+        {name:"速尔南血宴5钻",price:"340元",img:"xueyan.jpg"},
+        {name:"速尔南血宴6钻",price:"450元",img:"xueyan.jpg"},
+        {name:"速尔南血宴7钻",price:"1200元",img:"xueyan.jpg"}
+    ]
+
+    //渲染商品
+    const goodsBox = document.getElementById('goodsBox')
+    goods.forEach((item,idx)=>{
+        const div = document.createElement('div')
+        div.className = 'goods-item'
+        div.innerHTML = `
+            <img class="goods-img" src="${item.img}" alt="${item.name}">
+            <h3>${item.name}</h3>
+            <div class="price">${item.price}</div>
+            <button class="buy-btn" onclick="openPay(${idx})">立即购买</button>
+        `
+        goodsBox.appendChild(div)
+    })
+
+    let currentGoods = null
+    const payMask = document.getElementById('payMask')
+    const infoMask = document.getElementById('infoMask')
+
+    function openPay(idx){
+        currentGoods = goods[idx]
+        document.getElementById('payTip').innerText = `商品：${currentGoods.name}｜价格：${currentGoods.price}`
+        payMask.classList.add('show')
+    }
+    function showForm(){
+        payMask.classList.remove('show')
+        infoMask.classList.add('show')
+    }
+    function closeMask(){
+        payMask.classList.remove('show')
+        infoMask.classList.remove('show')
+    }
+    function submitInfo(){
+        const gname = document.getElementById('gameName').value.trim()
+        const gid = document.getElementById('gameId').value.trim()
+        if(!gname || !gid){
+            alert("游戏名称和ID不能为空！")
+            return
+        }
+        alert(`提交成功！\n商品：${currentGoods.name}\n游戏：${gname}\nID：${gid}\n【注意：你收不到这条信息！】`)
+        closeMask()
+    }
+</script>
+</body>
+</html>
